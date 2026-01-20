@@ -23,8 +23,21 @@ RUN curl -Lo /usr/local/bin/hysteria https://github.com/apernet/hysteria/release
 # Copy Blitz source code
 COPY blitz_source/ /etc/hysteria/
 
-# Debug file structure
-RUN ls -la /etc/hysteria/
+# Debug file structure - CRITICAL for troubleshooting
+RUN echo "=== DEBUG: Listing /etc/hysteria contents ===" && \
+    ls -la /etc/hysteria/ && \
+    echo "=== DEBUG: Checking for requirements.txt ===" && \
+    if [ -f /etc/hysteria/requirements.txt ]; then \
+        echo "requirements.txt FOUND at /etc/hysteria/requirements.txt"; \
+        ls -la /etc/hysteria/requirements.txt; \
+    else \
+        echo "requirements.txt NOT FOUND at /etc/hysteria/requirements.txt"; \
+        echo "Contents of /etc/hysteria:"; \
+        ls -la /etc/hysteria/; \
+        echo "Full recursive listing:"; \
+        find /etc/hysteria -type f -name "requirements.txt" 2>/dev/null || echo "No requirements.txt found recursively"; \
+        exit 1; \
+    fi
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /etc/hysteria/requirements.txt
