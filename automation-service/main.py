@@ -24,8 +24,7 @@ settings = get_settings()
 db = Database(settings.DB_PATH)
 blitz = BlitzClient(
     settings.BLITZ_API_URL,
-    settings.BLITZ_ADMIN_USERNAME,
-    settings.BLITZ_ADMIN_PASSWORD
+    settings.BLITZ_SECRET_KEY
 )
 telegram_2fa = Telegram2FA()
 

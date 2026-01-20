@@ -8,43 +8,23 @@ logger = logging.getLogger(__name__)
 class BlitzClient:
     """Client for Blitz Panel Hysteria2 management API"""
     
-    def __init__(self, base_url: str, username: str, password: str):
+    def __init__(self, base_url: str, api_token: str):
         self.base_url = base_url.rstrip('/')
-        self.username = username
-        self.password = password
-        self.token = None
+        self.api_token = api_token
 
     def _public_base_url(self) -> str:
         return self.base_url[:-4] if self.base_url.endswith("/api") else self.base_url
         
     async def _get_token(self) -> str:
         """Get authentication token from Blitz panel"""
-        if self.token:
-            return self.token
-            
-        login_url = f"{self.base_url}/auth/login"
-        payload = {
-            "username": self.username,
-            "password": self.password
-        }
-        
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(login_url, json=payload)
-                response.raise_for_status()
-                data = response.json()
-                self.token = data.get("access_token")
-                return self.token
-            except httpx.HTTPStatusError as e:
-                logger.error(f"Blitz login error: {e.response.text}")
-                raise
+        return self.api_token
                 
     async def _make_request(self, method: str, endpoint: str, data: Dict = None) -> Dict[str, Any]:
         """Make authenticated request to Blitz API"""
         token = await self._get_token()
         
         headers = {
-            "Authorization": f"Bearer {token}",
+            "Authorization": f"{token}",
             "Content-Type": "application/json"
         }
         

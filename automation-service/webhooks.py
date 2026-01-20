@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 settings = get_settings()
 db = Database(settings.DB_PATH)
-blitz = BlitzClient(settings.BLITZ_API_URL, settings.BLITZ_ADMIN_USERNAME, settings.BLITZ_ADMIN_PASSWORD)
+blitz = BlitzClient(settings.BLITZ_API_URL, settings.BLITZ_SECRET_KEY)
 
 class WebhookEvent(BaseModel):
     event_type: str

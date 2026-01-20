@@ -12,13 +12,16 @@ export EXPIRATION_MINUTES=${EXPIRATION_MINUTES:-60}
 export ROOT_PATH=${ROOT_PATH:-blitz}
 export DECOY_PATH=${DECOY_PATH:-None}
 
+# Generate SHA256 hash for password
+ADMIN_PASSWORD_HASH=$(python3 -c "import hashlib; print(hashlib.sha256('$ADMIN_PASSWORD'.encode()).hexdigest())")
+
 # Write .env file for the application
 cat <<EOL > /etc/hysteria/core/scripts/webpanel/.env
 PORT=$PORT
 DOMAIN=$DOMAIN
 DEBUG=$DEBUG
 ADMIN_USERNAME=$ADMIN_USERNAME
-ADMIN_PASSWORD=$ADMIN_PASSWORD
+ADMIN_PASSWORD=$ADMIN_PASSWORD_HASH
 API_TOKEN=$API_TOKEN
 EXPIRATION_MINUTES=$EXPIRATION_MINUTES
 ROOT_PATH=$ROOT_PATH
