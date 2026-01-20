@@ -37,6 +37,8 @@ This runs all services (Blitz, MongoDB, Automation Service) in containers. Easie
     docker-compose up -d --build
     ```
 
+    Single-command startup builds images if needed, initializes databases (Mongo and SQLite via app lifespan), starts Telegram bot, and wires service dependencies automatically.
+
 4.  **Access**:
     -   **Blitz Admin**: `http://YOUR_DOMAIN:8000/blitz/login`
     -   **Telegram Bot**: Start the bot `@YourBotName`
@@ -71,3 +73,20 @@ Runs Blitz Panel directly on the host (systemd) for maximum performance, while k
 ## 📚 Documentation
 -   [Architecture](ARCHITECTURE.md)
 -   [Deployment Guide](DEPLOYMENT.md)
+ -   [Admin Guide](ADMIN_GUIDE.md)
+ -   [ID Policy](ID_POLICY.md)
+
+## ⚙️ .env Variables
+Required:
+- `DOMAIN` — public domain for URLs
+- `BLITZ_ADMIN_PASSWORD` — admin password for Blitz
+- `BLITZ_SECRET_KEY` — shared secret for API/webhooks
+- `TELEGRAM_BOT_TOKEN` — bot token from @BotFather
+- `CORPORATE_SECRET` — header `X-Corporate-Secret` value for protected endpoints
+
+Optional:
+- `ADMIN_TELEGRAM_IDS` — comma-separated Telegram IDs with admin rights in bot
+- `WEBHOOK_SECRET` — HMAC secret for webhook signatures
+- `HYSTERIA2_PORT` — Hysteria listen port (default 443)
+
+Use [.env.example](file:///c:/Users/User/Desktop/corp/.env.example) as a template.

@@ -57,8 +57,11 @@ services:
       BLITZ_API_URL: http://blitz:8000/api
       BLITZ_ADMIN_USERNAME: admin
       BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD:-qwerty123}
+      BLITZ_SECRET_KEY: ${BLITZ_SECRET_KEY}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS:-}
       CORPORATE_SECRET: ${CORPORATE_SECRET}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
       DOMAIN: ${DOMAIN:-h2.quick-vpn.ru}
       DB_PATH: /app/data/users.db
     depends_on:
