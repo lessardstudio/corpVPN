@@ -24,7 +24,7 @@ RUN curl -Lo /usr/local/bin/hysteria https://github.com/apernet/hysteria/release
 COPY blitz_source/ /etc/hysteria/
 
 ARG BLITZ_REPO=https://github.com/ReturnFI/Blitz.git
-ARG BLITZ_REF=master
+ARG BLITZ_REF=main
 RUN if [ ! -f /etc/hysteria/requirements.txt ]; then \
         rm -rf /etc/hysteria/* && \
         git clone --depth 1 --branch "$BLITZ_REF" "$BLITZ_REPO" /etc/hysteria; \
