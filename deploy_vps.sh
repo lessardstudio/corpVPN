@@ -201,6 +201,14 @@ install_docker() {
 # ------------------------------------------------------------------------------
 setup_project() {
     log_step "Setting up Project..."
+
+    # Check for source code presence
+    if [ ! -d "blitz_source" ] || [ -z "$(ls -A blitz_source)" ]; then
+        log_error "Directory 'blitz_source' is missing or empty!"
+        log_error "Please upload the source code to this directory before deploying."
+        log_error "Example: scp -r blitz_source/ root@your-server-ip:$(pwd)/"
+        exit 1
+    fi
     
     # Host WireGuard Setup
     if [ ! -f "/etc/wireguard/wg0.conf" ]; then
