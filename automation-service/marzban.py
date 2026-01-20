@@ -8,7 +8,8 @@ class MarzbanClient:
     def __init__(self, base_url: str, api_token: str):
         self.base_url = base_url.rstrip('/')
         self.headers = {
-            "Authorization": f"Bearer {api_token}",
+            # Blitz expects exact token match, no Bearer prefix
+            "Authorization": f"{api_token}",
             "Content-Type": "application/json"
         }
 

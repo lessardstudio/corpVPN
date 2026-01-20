@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 settings = get_settings()
 db = Database(settings.DB_PATH)
-marzban = MarzbanClient(settings.MARZBAN_API_URL, settings.MARZBAN_API_KEY)
+# Use Blitz configuration instead of Marzban
+marzban = MarzbanClient(settings.BLITZ_API_URL, settings.BLITZ_SECRET_KEY)
 
 class WebhookEvent(BaseModel):
     event_type: str
