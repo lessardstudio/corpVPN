@@ -21,7 +21,10 @@ RUN curl -Lo /usr/local/bin/hysteria https://github.com/apernet/hysteria/release
     && chmod +x /usr/local/bin/hysteria
 
 # Copy Blitz source code
-COPY blitz_source /etc/hysteria
+COPY blitz_source/ /etc/hysteria/
+
+# Debug file structure
+RUN ls -la /etc/hysteria/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /etc/hysteria/requirements.txt
