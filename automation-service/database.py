@@ -72,6 +72,28 @@ class Database:
                     FOREIGN KEY (corporate_id) REFERENCES users(corporate_id)
                 )
             """)
+
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS id_registry (
+                    id TEXT PRIMARY KEY,
+                    owner TEXT,
+                    status TEXT CHECK(status IN ('issued','active','revoked','archived')) DEFAULT 'issued',
+                    issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP
+                )
+            """)
+
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS id_audit (
+                    audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id TEXT,
+                    action TEXT,
+                    actor TEXT,
+                    details TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(id) REFERENCES id_registry(id)
+                )
+            """)
             
             await db.commit()
 
@@ -240,4 +262,47 @@ class Database:
                 SET auth_attempts = 0, locked_until = NULL 
                 WHERE corporate_id = ?
             """, (corporate_id,))
+            await db.commit()
+
+    async def get_id(self, id_value: str) -> Optional[Dict[str, Any]]:
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT * FROM id_registry WHERE id = ?", (id_value,)) as cursor:
+                row = await cursor.fetchone()
+                return dict(row) if row else None
+
+    async def create_id(self, id_value: str, owner: str):
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
+                INSERT INTO id_registry (id, owner, status, issued_at)
+                VALUES (?, ?, 'issued', ?)
+            """, (id_value, owner, datetime.now()))
+            await db.commit()
+
+    async def set_id_status(self, id_value: str, status: str):
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
+                UPDATE id_registry SET status = ?, updated_at = ? WHERE id = ?
+            """, (status, datetime.now(), id_value))
+            await db.commit()
+
+    async def search_ids(self, query: str, limit: int = 20) -> list:
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            like = f"%{query}%"
+            async with db.execute("""
+                SELECT * FROM id_registry
+                WHERE id LIKE ? OR owner LIKE ? OR status LIKE ?
+                ORDER BY issued_at DESC
+                LIMIT ?
+            """, (like, like, like, limit)) as cursor:
+                rows = await cursor.fetchall()
+                return [dict(row) for row in rows]
+
+    async def audit_id_action(self, id_value: str, action: str, actor: str, details: str = ""):
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
+                INSERT INTO id_audit (id, action, actor, details)
+                VALUES (?, ?, ?, ?)
+            """, (id_value, action, actor, details))
             await db.commit()

@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     
     # Telegram Configuration
     TELEGRAM_BOT_TOKEN: str
+    ADMIN_TELEGRAM_IDS: str = ""
     
     # Corporate Security
     CORPORATE_SECRET: str

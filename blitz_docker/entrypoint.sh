@@ -26,4 +26,8 @@ DECOY_PATH=$DECOY_PATH
 EOL
 
 echo "Starting Supervisord (Web Panel + Hysteria2)..."
+# Patch Hysteria listen port in config if placeholder is present
+if [ -n "${HYSTERIA2_PORT}" ] && [ -f "/etc/hysteria/config.json" ]; then
+  sed -i "s/:\$port/:${HYSTERIA2_PORT}/g" /etc/hysteria/config.json
+fi
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
