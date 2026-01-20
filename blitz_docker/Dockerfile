@@ -23,8 +23,12 @@ RUN curl -Lo /usr/local/bin/hysteria https://github.com/apernet/hysteria/release
 # Copy Blitz source code
 COPY blitz_source/ /etc/hysteria/
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r /etc/hysteria/requirements.txt
+# Debug: List files to confirm copy success (Step 4)
+RUN ls -la /etc/hysteria/ && pwd
+
+# Upgrade pip and install dependencies (Step 5 check + pip update)
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r /etc/hysteria/requirements.txt
 
 # Patch MongoDB connection to use 'mongo' service
 RUN sed -i 's/localhost:27017/mongo:27017/g' /etc/hysteria/core/scripts/db/database.py
