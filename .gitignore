@@ -1,41 +1,62 @@
-# Environment variables
-.env
-.env.local
-.env.backup
-
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 venv/
-.pytest_cache/
+env/
+ENV/
 
-# Data directories (sensitive data)
-automation_data/
-blitz_data/
-marzban_data/
-# Exception for setup scripts/configs inside marzban_data if any (though currently mostly generated)
-# but we keep the directory structure if git tracked empty dirs, but usually we just ignore contents.
-# Let's verify if we need to keep anything. The code generates most things.
+# Docker
+.dockerignore
+docker-compose.override.yml
 
-# WireGuard keys
-wireguard/
-*.key
-*.pub
-
-# SSL Certificates
-configs/ssl/
-*.crt
-*.pem
+# Environment Variables
+.env
+.env.*
+!.env.example
 
 # IDEs
 .vscode/
 .idea/
-.trae/
-
-# OS specific
-.DS_Store
-Thumbs.db
+*.swp
+*.swo
 
 # Logs
 *.log
-logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project Specific
+blitz_data/
+automation_data/
+configs/
+!configs/blitz.env
+!configs/*.json
+!configs/*.template.*
+
+# Scripts generated artifacts
+deploy_vps.log

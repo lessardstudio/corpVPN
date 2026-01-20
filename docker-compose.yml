@@ -1,41 +1,80 @@
 services:
-  # mongo:  <-- Installed on host
-  #   image: mongo:latest
-  #   ...
+  mongo:
+    image: mongo:latest
+    container_name: blitz-mongo
+    restart: unless-stopped
+    volumes:
+      - ./blitz_data/db:/data/db
+    networks:
+      - vpn-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # blitz:  <-- Installed on host
-  #   build: ...
-  #   ...
+  blitz:
+    build:
+      context: .
+      dockerfile: blitz_docker/Dockerfile
+    container_name: blitz
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+      - "443:443/udp"
+      - "443:443/tcp"
+    environment:
+      BLITZ_ADMIN_USERNAME: admin
+      BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD:-qwerty123}
+      BLITZ_SECRET_KEY: ${BLITZ_SECRET_KEY:-token123}
+      HYSTERIA2_ENABLED: "true"
+      HYSTERIA2_PORT: 443
+      HYSTERIA2_DOMAIN: ${DOMAIN:-h2.quick-vpn.ru}
+      # Env vars for entrypoint
+      PORT: 8000
+      DOMAIN: ${DOMAIN:-h2.quick-vpn.ru}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - vpn-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   automation-service:
     build: ./automation-service
     container_name: automation-service
     restart: unless-stopped
-    # Network mode host allows accessing localhost:8000 (Blitz) and localhost:27017 (Mongo)
-    network_mode: "host" 
+    ports:
+      - "8080:8080"
     volumes:
       - ./automation_data:/app/data
       - ./configs:/app/configs
     environment:
-      # Access Blitz running on host
-      BLITZ_API_URL: http://localhost:8000/api
+      BLITZ_API_URL: http://blitz:8000/api
       BLITZ_ADMIN_USERNAME: admin
       BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD:-qwerty123}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       CORPORATE_SECRET: ${CORPORATE_SECRET}
       DOMAIN: ${DOMAIN:-h2.quick-vpn.ru}
       DB_PATH: /app/data/users.db
-    # Remove depends_on since services are on host
-    # depends_on:
-    #   blitz:
-    #     condition: service_healthy
+    depends_on:
+      blitz:
+        condition: service_healthy
+    networks:
+      - vpn-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-# Networks not needed for host mode
-# networks:
-#   vpn-network:
-#     ...
+networks:
+  vpn-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

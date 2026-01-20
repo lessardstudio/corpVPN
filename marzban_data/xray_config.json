@@ -1,0 +1,128 @@
+{
+  "log": {
+    "access": "/var/log/xray/access.log",
+    "error": "/var/log/xray/error.log",
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "port": 443,
+      "protocol": "vless",
+      "settings": {
+        "clients": [],
+        "decryption": "none",
+        "fallbacks": [
+          {
+            "dest": "www.google.com:443",
+            "xver": 1
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "dest": "www.google.com:443",
+          "xver": 0,
+          "serverNames": [
+            "dl.google.com",
+            "www.google.com",
+            "google.com"
+          ],
+          "privateKey": "YOUR_PRIVATE_KEY_HERE",
+          "publicKey": "YOUR_PUBLIC_KEY_HERE",
+          "maxTimeDiff": 0,
+          "shortIds": [
+            "0123456789abcdef"
+          ]
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls"
+        ]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "UseIPv4"
+      },
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {
+        "response": {
+          "type": "http"
+        }
+      },
+      "tag": "blocked"
+    },
+    {
+      "protocol": "wireguard",
+      "settings": {
+        "secretKey": "YOUR_WIREGUARD_PRIVATE_KEY",
+        "address": [
+          "10.0.0.2/32"
+        ],
+        "peers": [
+          {
+            "publicKey": "YOUR_OFFICE_WIREGUARD_PUBLIC_KEY",
+            "endpoint": "YOUR_OFFICE_WIREGUARD_ENDPOINT:51820",
+            "allowedIPs": [
+              "192.168.0.0/16",
+              "10.0.0.0/8"
+            ],
+            "keepAlive": 30
+          }
+        ],
+        "mtu": 1408
+      },
+      "tag": "office-vpn"
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "ip": [
+          "192.168.0.0/16",
+          "10.0.0.0/8"
+        ],
+        "outboundTag": "office-vpn"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "outboundTag": "direct"
+      }
+    ]
+  },
+  "policy": {
+    "levels": {
+      "0": {
+        "handshake": 4,
+        "connIdle": 300,
+        "uplinkOnly": 2,
+        "downlinkOnly": 5,
+        "statsUserUplink": true,
+        "statsUserDownlink": true,
+        "bufferSize": 512
+      }
+    },
+    "system": {
+      "statsInboundUplink": true,
+      "statsInboundDownlink": true,
+      "statsOutboundUplink": true,
+      "statsOutboundDownlink": true
+    }
+  },
+  "stats": {}
+}

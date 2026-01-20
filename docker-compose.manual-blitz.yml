@@ -1,0 +1,41 @@
+services:
+  # mongo:  <-- Installed on host
+  #   image: mongo:latest
+  #   ...
+
+  # blitz:  <-- Installed on host
+  #   build: ...
+  #   ...
+
+  automation-service:
+    build: ./automation-service
+    container_name: automation-service
+    restart: unless-stopped
+    # Network mode host allows accessing localhost:8000 (Blitz) and localhost:27017 (Mongo)
+    network_mode: "host" 
+    volumes:
+      - ./automation_data:/app/data
+      - ./configs:/app/configs
+    environment:
+      # Access Blitz running on host
+      BLITZ_API_URL: http://localhost:8000/api
+      BLITZ_ADMIN_USERNAME: admin
+      BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD:-qwerty123}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      CORPORATE_SECRET: ${CORPORATE_SECRET}
+      DOMAIN: ${DOMAIN:-h2.quick-vpn.ru}
+      DB_PATH: /app/data/users.db
+    # Remove depends_on since services are on host
+    # depends_on:
+    #   blitz:
+    #     condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Networks not needed for host mode
+# networks:
+#   vpn-network:
+#     ...
