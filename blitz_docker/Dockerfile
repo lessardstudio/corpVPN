@@ -2,6 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Set non-interactive frontend for apt
+ARG DEBIAN_FRONTEND=noninteractive
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \

@@ -25,14 +25,14 @@ services:
       - "443:443/tcp"
     environment:
       BLITZ_ADMIN_USERNAME: admin
-      BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD:-changeme123}
-      BLITZ_SECRET_KEY: ${BLITZ_SECRET_KEY:-your-secret-key-here}
+      BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD:-qwerty123}
+      BLITZ_SECRET_KEY: ${BLITZ_SECRET_KEY:-token123}
       HYSTERIA2_ENABLED: "true"
       HYSTERIA2_PORT: 443
-      HYSTERIA2_DOMAIN: ${DOMAIN:-your-domain.com}
+      HYSTERIA2_DOMAIN: ${DOMAIN:-h2.quick-vpn.ru}
       # Env vars for entrypoint
       PORT: 8000
-      DOMAIN: ${DOMAIN:-your-domain.com}
+      DOMAIN: ${DOMAIN:-h2.quick-vpn.ru}
     depends_on:
       mongo:
         condition: service_healthy
@@ -56,10 +56,10 @@ services:
     environment:
       BLITZ_API_URL: http://blitz:8000/api
       BLITZ_ADMIN_USERNAME: admin
-      BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD:-changeme123}
+      BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD:-qwerty123}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       CORPORATE_SECRET: ${CORPORATE_SECRET}
-      DOMAIN: ${DOMAIN:-your-domain.com}
+      DOMAIN: ${DOMAIN:-h2.quick-vpn.ru}
       DB_PATH: /app/data/users.db
     depends_on:
       blitz:
