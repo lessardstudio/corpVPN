@@ -39,6 +39,16 @@ This runs all services (Blitz, MongoDB, Automation Service) in containers. Easie
 
     Single-command startup builds images if needed, initializes databases (Mongo and SQLite via app lifespan), starts Telegram bot, and wires service dependencies automatically.
 
+    If you prefer a single script:
+    ```bash
+    ./scripts/one_command_up.sh
+    ```
+
+    If you encounter a Docker snapshot/export error, recover with:
+    ```bash
+    ./scripts/docker_recover_build.sh
+    ```
+
 4.  **Access**:
     -   **Blitz Admin**: `http://YOUR_DOMAIN:8000/blitz/login`
     -   **Telegram Bot**: Start the bot `@YourBotName`
