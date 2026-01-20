@@ -89,6 +89,19 @@ pip install -r requirements.txt
 # 3. Patch Configuration
 log_info "Configuring application..."
 
+# Create .env file for Blitz
+cat <<EOL > "$INSTALL_DIR/.env"
+PORT=8000
+DOMAIN=h2.quick-vpn.ru
+DEBUG=false
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=qwerty123
+API_TOKEN=token123
+EXPIRATION_MINUTES=60
+ROOT_PATH=blitz
+EOL
+log_info "Created .env configuration"
+
 # Patch database connection (use localhost instead of mongo service)
 DB_FILE="core/scripts/db/database.py"
 if [ -f "$DB_FILE" ]; then
