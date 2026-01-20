@@ -1,0 +1,55 @@
+{
+  "listen": ":443",
+  "tls": {
+    "cert": "/etc/blitz/ssl/server.crt",
+    "key": "/etc/blitz/ssl/server.key"
+  },
+  "auth": {
+    "type": "password",
+    "password": "YOUR_HYSTERIA2_AUTH_PASSWORD"
+  },
+  "masquerade": {
+    "type": "proxy",
+    "proxy": {
+      "url": "https://dl.google.com",
+      "rewriteHost": true
+    }
+  },
+  "bandwidth": {
+    "up": "100 mbps",
+    "down": "100 mbps"
+  },
+  "ignoreClientBandwidth": false,
+  "disableUDP": false,
+  "udpIdleTimeout": "30s",
+  "acl": {
+    "inline": [
+      "# Corporate networks - allow direct access",
+      "192.168.0.0/16",
+      "10.0.0.0/8",
+      "# Block private networks not in corporate range",
+      "!172.16.0.0/12",
+      "# Allow all other traffic through VPN",
+      "*"
+    ]
+  },
+  "outbounds": [
+    {
+      "name": "office-network",
+      "type": "direct",
+      "direct": {
+        "mode": ""
+      }
+    },
+    {
+      "name": "internet",
+      "type": "direct",
+      "direct": {
+        "mode": ""
+      }
+    }
+  ],
+  "trafficStats": {
+    "listen": "127.0.0.1:9090"
+  }
+}

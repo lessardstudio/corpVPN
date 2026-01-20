@@ -1,0 +1,130 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "inet4_address": "172.19.0.1/30",
+      "auto_route": true,
+      "strict_route": false,
+      "endpoint_independent_nat": true,
+      "stack": "system",
+      "platform": {
+        "http_proxy": {
+          "enabled": true,
+          "server": "127.0.0.1",
+          "server_port": 2080
+        }
+      }
+    },
+    {
+      "type": "mixed",
+      "listen": "127.0.0.1",
+      "listen_port": 2080
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "hysteria2",
+      "tag": "corporate-vpn",
+      "server": "{{server}}",
+      "server_port": 443,
+      "up_mbps": 100,
+      "down_mbps": 100,
+      "password": "{{auth_key}}",
+      "tls": {
+        "enabled": true,
+        "server_name": "{{sni}}",
+        "insecure": false
+      },
+      "masquerade": {
+        "type": "proxy",
+        "proxy": {
+          "url": "https://dl.google.com",
+          "rewrite_host": true
+        }
+      }
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "block",
+      "tag": "block"
+    }
+  ],
+  "route": {
+    "geoip": {
+      "download_url": "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db",
+      "download_detour": "corporate-vpn"
+    },
+    "geosite": {
+      "download_url": "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db",
+      "download_detour": "corporate-vpn"
+    },
+    "rules": [
+      {
+        "ip_cidr": [
+          "192.168.0.0/16",
+          "10.0.0.0/8"
+        ],
+        "outbound": "corporate-vpn"
+      },
+      {
+        "ip_cidr": [
+          "172.16.0.0/12",
+          "127.0.0.0/8",
+          "::1/128",
+          "fc00::/7",
+          "fe80::/10"
+        ],
+        "outbound": "direct"
+      },
+      {
+        "protocol": "dns",
+        "outbound": "direct"
+      }
+    ],
+    "final": "direct",
+    "auto_detect_interface": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "tag": "google",
+        "address": "https://dns.google/dns-query",
+        "detour": "corporate-vpn"
+      },
+      {
+        "tag": "local",
+        "address": "https://1.1.1.1/dns-query",
+        "detour": "direct"
+      }
+    ],
+    "rules": [
+      {
+        "domain": [
+          "dl.google.com",
+          "google.com"
+        ],
+        "server": "google"
+      }
+    ],
+    "final": "local",
+    "strategy": "ipv4_only"
+  },
+  "ntp": {
+    "enabled": true,
+    "server": "time.google.com",
+    "server_port": 123,
+    "detour": "corporate-vpn"
+  },
+  "inbound": {
+    "domain_strategy": "ipv4_only"
+  },
+  "outbound": {
+    "domain_strategy": "ipv4_only"
+  }
+}

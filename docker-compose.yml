@@ -1,0 +1,51 @@
+services:
+  blitz:
+    image: gozargah/blitz:latest
+    container_name: blitz
+    restart: unless-stopped
+    ports:
+      - "8000:8000" # Blitz UI
+      - "443:443/udp" # Hysteria2 UDP port
+      - "443:443/tcp" # Fallback TCP
+    volumes:
+      - ./blitz_data:/var/lib/blitz
+      - ./configs:/etc/blitz
+    environment:
+      BLITZ_ADMIN_USERNAME: admin
+      BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD:-changeme123}
+      BLITZ_SECRET_KEY: ${BLITZ_SECRET_KEY:-your-secret-key-here}
+      HYSTERIA2_ENABLED: "true"
+      HYSTERIA2_PORT: 443
+      HYSTERIA2_DOMAIN: ${DOMAIN:-your-domain.com}
+    # WireGuard runs on host, no depends_on needed
+    networks:
+      - vpn-network
+
+  automation-service:
+    build: ./automation-service
+    container_name: automation-service
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./automation_data:/app/data
+      - ./configs:/app/configs
+    environment:
+      BLITZ_API_URL: http://blitz:8000/api
+      BLITZ_ADMIN_USERNAME: admin
+      BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD:-changeme123}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      CORPORATE_SECRET: ${CORPORATE_SECRET}
+      DOMAIN: ${DOMAIN:-your-domain.com}
+      DB_PATH: /app/data/users.db
+    depends_on:
+      - blitz
+    networks:
+      - vpn-network
+
+networks:
+  vpn-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

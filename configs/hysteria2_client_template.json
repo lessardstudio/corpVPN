@@ -1,0 +1,30 @@
+{
+  "server": "{{server}}",
+  "auth": "{{auth_key}}",
+  "tls": {
+    "sni": "{{sni}}",
+    "insecure": false
+  },
+  "bandwidth": {
+    "up": "{{upload_speed}}",
+    "down": "{{download_speed}}"
+  },
+  "masquerade": {
+    "type": "proxy",
+    "proxy": {
+      "url": "https://dl.google.com",
+      "rewriteHost": true
+    }
+  },
+  "acl": {
+    "inline": [
+      "# Corporate networks - direct access",
+      "192.168.0.0/16",
+      "10.0.0.0/8",
+      "# Block other private networks",
+      "!172.16.0.0/12",
+      "# Default route through VPN",
+      "*"
+    ]
+  }
+}

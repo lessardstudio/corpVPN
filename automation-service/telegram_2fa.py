@@ -1,0 +1,211 @@
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.filters import Command, StateFilter
+from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+import logging
+from typing import Optional
+from datetime import datetime, timedelta
+import secrets
+
+from config import get_settings
+from database import Database
+
+logger = logging.getLogger(__name__)
+settings = get_settings()
+
+# FSM States for 2FA flow
+class AuthStates(StatesGroup):
+    waiting_for_corporate_id = State()
+    waiting_for_verification_code = State()
+    authenticated = State()
+
+class Telegram2FA:
+    def __init__(self):
+        self.bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+        self.dp = Dispatcher()
+        self.db = Database(settings.DB_PATH)
+        self.verification_codes = {}  # In production, use Redis or database
+        
+    async def start_command(self, message: Message, state: FSMContext):
+        """Handle /start command and initiate 2FA process"""
+        user = message.from_user
+        
+        # Check if user already has corporate ID linked
+        existing_user = await self.db.get_user_by_telegram_id(str(user.id))
+        
+        if existing_user:
+            await message.answer(
+                f"✅ Вы уже аутентифицированы!\n"
+                f"Ваш корпоративный ID: {existing_user['corporate_id']}\n"
+                f"Используйте /help для списка команд."
+            )
+            await state.set_state(AuthStates.authenticated)
+            return
+        
+        await message.answer(
+            "🔐 Добро пожаловать в Corporate VPN Bot!\n\n"
+            "Для получения доступа к VPN, мне нужно связать ваш Telegram аккаунт с корпоративным ID.\n\n"
+            "Пожалуйста, введите ваш корпоративный ID:"
+        )
+        await state.set_state(AuthStates.waiting_for_corporate_id)
+    
+    async def handle_corporate_id(self, message: Message, state: FSMContext):
+        """Handle corporate ID input and send verification code"""
+        corporate_id = message.text.strip()
+        
+        # Validate corporate ID format
+        if not corporate_id or len(corporate_id) < 3:
+            await message.answer("❌ Неверный формат корпоративного ID. Попробуйте еще раз:")
+            return
+        
+        # Check if corporate ID exists in system (would integrate with HR system)
+        # For now, we'll accept any valid format
+        
+        # Generate verification code
+        verification_code = secrets.token_hex(3).upper()  # 6 character hex code
+        
+        # Store verification code with expiration (5 minutes)
+        self.verification_codes[message.from_user.id] = {
+            'corporate_id': corporate_id,
+            'code': verification_code,
+            'expires_at': datetime.now() + timedelta(minutes=5)
+        }
+        
+        await message.answer(
+            f"📧 Код подтверждения отправлен на ваш корпоративный email.\n\n"
+            f"Пожалуйста, введите 6-значный код подтверждения:"
+        )
+        
+        # In production, send email to corporate email
+        logger.info(f"Verification code for {corporate_id}: {verification_code}")
+        
+        await state.set_state(AuthStates.waiting_for_verification_code)
+        await state.update_data(corporate_id=corporate_id)
+    
+    async def handle_verification_code(self, message: Message, state: FSMContext):
+        """Handle verification code input"""
+        user_code = message.text.strip().upper()
+        user_id = message.from_user.id
+        
+        # Get stored verification data
+        verification_data = self.verification_codes.get(user_id)
+        
+        if not verification_data:
+            await message.answer("❌ Код подтверждения истёк. Пожалуйста, начните сначала с команды /start")
+            await state.clear()
+            return
+        
+        # Check expiration
+        if datetime.now() > verification_data['expires_at']:
+            del self.verification_codes[user_id]
+            await message.answer("❌ Код подтверждения истёк. Пожалуйста, начните сначала с команды /start")
+            await state.clear()
+            return
+        
+        # Verify code
+        if user_code != verification_data['code']:
+            await message.answer("❌ Неверный код подтверждения. Попробуйте еще раз:")
+            return
+        
+        # Success! Link Telegram ID to corporate ID
+        corporate_id = verification_data['corporate_id']
+        telegram_id = str(message.from_user.id)
+        
+        # Store the mapping in database
+        await self.db.link_telegram_to_corporate(telegram_id, corporate_id)
+        
+        # Clean up verification data
+        del self.verification_codes[user_id]
+        
+        await message.answer(
+            "✅ Аутентификация успешно завершена!\n\n"
+            "Теперь вы можете получить свою VPN конфигурацию.\n"
+            "Используйте команду /get_config для получения конфигурации."
+        )
+        
+        await state.set_state(AuthStates.authenticated)
+    
+    async def get_config_command(self, message: Message, state: FSMContext):
+        """Handle /get_config command for authenticated users"""
+        current_state = await state.get_state()
+        
+        if current_state != AuthStates.authenticated:
+            await message.answer("❌ Сначала пройдите аутентификацию с помощью команды /start")
+            return
+        
+        telegram_id = str(message.from_user.id)
+        user = await self.db.get_user_by_telegram_id(telegram_id)
+        
+        if not user:
+            await message.answer("❌ Пользователь не найден. Пожалуйста, пройдите аутентификацию заново.")
+            await state.clear()
+            return
+        
+        # Get subscription URL from our automation service
+        subscription_url = user.get('subscription_url')
+        
+        if not subscription_url:
+            # Request new subscription from automation service
+            corporate_id = user['corporate_id']
+            # This would call our automation service API
+            # For now, show placeholder
+            await message.answer(
+                "📋 Ваша VPN конфигурация готовится...\n"
+                "Пожалуйста, подождите несколько минут."
+            )
+            return
+        
+        # Send configuration to user
+        await message.answer(
+            "📱 Ваша VPN конфигурация:\n\n"
+            f"Корпоративный ID: {user['corporate_id']}\n"
+            f"Username: {user['marzban_username']}\n\n"
+            "🔗 Ссылка на конфигурацию:\n"
+            f"{subscription_url}\n\n"
+            "Инструкции по установке:\n"
+            "1. Установите приложение Hiddify\n"
+            "2. Импортируйте конфигурацию по ссылке\n"
+            "3. Подключитесь к VPN"
+        )
+    
+    async def help_command(self, message: Message):
+        """Handle /help command"""
+        await message.answer(
+            "🤖 Доступные команды:\n\n"
+            "/start - Начать аутентификацию\n"
+            "/get_config - Получить VPN конфигурацию\n"
+            "/help - Показать это сообщение\n\n"
+            "Для получения VPN доступа:\n"
+            "1. Используйте /start для аутентификации\n"
+            "2. Введите ваш корпоративный ID\n"
+            "3. Подтвердите email кодом\n"
+            "4. Получите конфигурацию через /get_config"
+        )
+    
+    def setup_handlers(self):
+        """Setup bot handlers"""
+        self.dp.message.register(self.start_command, Command("start"))
+        self.dp.message.register(self.help_command, Command("help"))
+        self.dp.message.register(self.get_config_command, Command("get_config"))
+        
+        # Handle corporate ID input
+        self.dp.message.register(
+            self.handle_corporate_id,
+            AuthStates.waiting_for_corporate_id
+        )
+        
+        # Handle verification code input
+        self.dp.message.register(
+            self.handle_verification_code,
+            AuthStates.waiting_for_verification_code
+        )
+    
+    async def start_bot(self):
+        """Start the Telegram bot"""
+        try:
+            self.setup_handlers()
+            await self.dp.start_polling(self.bot)
+        except Exception as e:
+            logger.error(f"Bot error: {e}")
+            raise

@@ -1,0 +1,41 @@
+# Environment variables
+.env
+.env.local
+.env.backup
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.pytest_cache/
+
+# Data directories (sensitive data)
+automation_data/
+blitz_data/
+marzban_data/
+# Exception for setup scripts/configs inside marzban_data if any (though currently mostly generated)
+# but we keep the directory structure if git tracked empty dirs, but usually we just ignore contents.
+# Let's verify if we need to keep anything. The code generates most things.
+
+# WireGuard keys
+wireguard/
+*.key
+*.pub
+
+# SSL Certificates
+configs/ssl/
+*.crt
+*.pem
+
+# IDEs
+.vscode/
+.idea/
+.trae/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
