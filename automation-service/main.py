@@ -12,6 +12,7 @@ from config import get_settings
 from database import Database
 from blitz_client import BlitzClient
 from telegram_2fa import Telegram2FA
+from monitor import HealthMonitor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,6 +36,9 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Telegram Bot...")
     # Run bot in background
     asyncio.create_task(telegram_2fa.start_bot())
+    logger.info("Starting Health Monitor...")
+    monitor = HealthMonitor(db, telegram_2fa)
+    await monitor.start()
     
     yield
     

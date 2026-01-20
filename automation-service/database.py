@@ -74,6 +74,17 @@ class Database:
             """)
 
             await db.execute("""
+                CREATE TABLE IF NOT EXISTS monitor_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    component TEXT,
+                    level TEXT,
+                    message TEXT,
+                    details TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            await db.execute("""
                 CREATE TABLE IF NOT EXISTS id_registry (
                     id TEXT PRIMARY KEY,
                     owner TEXT,
@@ -169,6 +180,17 @@ class Database:
                 INSERT INTO auth_logs (corporate_id, telegram_id, action, ip_address, user_agent, success, error_message)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (corporate_id, telegram_id, action, ip_address, user_agent, success, error_message))
+            await db.commit()
+
+    async def log_monitor_event(self, component: str, level: str, message: str, details: str = ""):
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                """
+                INSERT INTO monitor_events (component, level, message, details)
+                VALUES (?, ?, ?, ?)
+                """,
+                (component, level, message, details),
+            )
             await db.commit()
 
     async def get_user_auth_logs(self, corporate_id: str, limit: int = 10) -> list:

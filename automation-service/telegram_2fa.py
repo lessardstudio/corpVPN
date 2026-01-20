@@ -206,6 +206,14 @@ class Telegram2FA:
             "4. Получите конфигурацию через /get_config"
         )
 
+    async def notify_admins(self, text: str):
+        # send message to all admin IDs
+        for admin_id in self.admin_ids:
+            try:
+                await self.bot.send_message(chat_id=admin_id, text=text)
+            except Exception as e:
+                logger.error(f"notify_admin {admin_id} failed: {e}")
+
     async def issue_id_command(self, message: Message, state: FSMContext):
         if not self.is_admin(message.from_user.id):
             await message.answer("❌ Доступ запрещен")
