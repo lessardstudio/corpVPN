@@ -97,8 +97,8 @@ configure_security() {
     log_step "Configuring Security..."
     
     # SSH Port & User Setup
-    read -p "Enter new SSH port (default: 2222): " SSH_PORT
-    SSH_PORT=${SSH_PORT:-2222}
+    read -p "Enter new SSH port (default: 22): " SSH_PORT
+    SSH_PORT=${SSH_PORT:-22}
     
     read -p "Enter new sudo username (default: admin): " VPS_USER
     VPS_USER=${VPS_USER:-admin}

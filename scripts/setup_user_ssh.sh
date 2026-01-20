@@ -32,7 +32,7 @@ fi
 # Configuration variables (defaults if not set)
 VPS_USER=${VPS_USER:-"admin_user"}
 VPS_PASSWORD=${VPS_PASSWORD:-"ChangeMe123!"}
-SSH_PORT=${SSH_PORT:-2222}
+SSH_PORT=${SSH_PORT:-22}
 
 log_step "1. Creating new user: $VPS_USER"
 
