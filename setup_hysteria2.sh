@@ -44,7 +44,11 @@ check_prerequisites() {
     fi
     
     # Check if Docker Compose is installed
-    if ! command -v docker-compose &> /dev/null; then
+    if docker compose version &> /dev/null; then
+        COMPOSE_CMD="docker compose"
+    elif command -v docker-compose &> /dev/null; then
+        COMPOSE_CMD="docker-compose"
+    else
         log_error "Docker Compose is not installed. Please install Docker Compose first."
         exit 1
     fi
@@ -356,22 +360,32 @@ create_migration_script() {
 
 set -e
 
+# Determine Docker Compose command
+if docker compose version &> /dev/null; then
+    COMPOSE_CMD="docker compose"
+elif command -v docker-compose &> /dev/null; then
+    COMPOSE_CMD="docker-compose"
+else
+    echo "Error: Docker Compose not found"
+    exit 1
+fi
+
 echo "🔄 Starting migration from VLESS to Hysteria2..."
 
 # Stop existing services
-docker-compose down
+\$COMPOSE_CMD down
 
 # Backup existing data
 echo "💾 Creating backup..."
-cp -r marzban_data marzban_data_backup_$(date +%Y%m%d_%H%M%S)
+cp -r marzban_data marzban_data_backup_\$(date +%Y%m%d_%H%M%S)
 
 # Pull new images
 echo "📦 Pulling new images..."
-docker-compose pull
+\$COMPOSE_CMD pull
 
 # Start new services
 echo "🚀 Starting Hysteria2 services..."
-docker-compose up -d
+\$COMPOSE_CMD up -d
 
 # Wait for services to start
 echo "⏳ Waiting for services to start..."
@@ -379,7 +393,7 @@ sleep 30
 
 # Test connectivity
 echo "🧪 Testing Hysteria2 connectivity..."
-docker-compose exec blitz curl -k https://localhost:8000/health || echo "Health check failed"
+\$COMPOSE_CMD exec blitz curl -k https://localhost:8000/health || echo "Health check failed"
 
 echo "✅ Migration completed successfully!"
 echo ""

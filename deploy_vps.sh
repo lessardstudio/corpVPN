@@ -154,28 +154,46 @@ install_docker() {
     
     if command -v docker &> /dev/null; then
         log_info "Docker already installed."
-        return
-    fi
-    
-    if [[ "$PKG_MANAGER" == "apt-get" ]]; then
-        mkdir -p /etc/apt/keyrings
-        if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    else
+        if [[ "$PKG_MANAGER" == "apt-get" ]]; then
+            mkdir -p /etc/apt/keyrings
+            if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+                curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            fi
+            echo \
+              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+              $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+            apt-get update
+            apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+            
+        elif [[ "$PKG_MANAGER" == "dnf" ]]; then
+            dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+            dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+            systemctl start docker
+            systemctl enable docker
         fi
-        echo \
-          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-          $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-        apt-get update
-        apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-        
-    elif [[ "$PKG_MANAGER" == "dnf" ]]; then
-        dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-        dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-        systemctl start docker
-        systemctl enable docker
+        log_info "Docker installed."
     fi
-    
-    log_info "Docker installed."
+
+    # Determine Docker Compose command
+    if docker compose version &> /dev/null; then
+        export COMPOSE_CMD="docker compose"
+        log_info "Using 'docker compose' (plugin)"
+    elif command -v docker-compose &> /dev/null; then
+        export COMPOSE_CMD="docker-compose"
+        log_info "Using 'docker-compose' (standalone)"
+    else
+        log_warn "Docker Compose not found. Attempting standalone installation..."
+        curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+        if command -v docker-compose &> /dev/null; then
+            export COMPOSE_CMD="docker-compose"
+            log_info "Standalone Docker Compose installed."
+        else
+            log_error "Failed to install Docker Compose."
+            exit 1
+        fi
+    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -192,11 +210,17 @@ setup_project() {
     
     # Hysteria2 & Blitz Setup
     chmod +x setup_hysteria2.sh
+    # Pass COMPOSE_CMD to setup script if it supports it, or rely on it detecting
     ./setup_hysteria2.sh
     
     # Start Services
     log_step "Starting Services..."
-    docker-compose up -d
+    $COMPOSE_CMD up -d
+    
+    if [ $? -ne 0 ]; then
+        log_error "Failed to start services with $COMPOSE_CMD up -d"
+        exit 1
+    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -217,7 +241,13 @@ main() {
     setup_project
     
     log_step "Verification..."
-    docker-compose ps
+    if $COMPOSE_CMD ps | grep -q "Up"; then
+         log_info "Services are running."
+         $COMPOSE_CMD ps
+    else
+         log_warn "Services might not be running correctly."
+         $COMPOSE_CMD ps
+    fi
     
     log_info "Deployment Finished Successfully!"
     log_info "Log saved to $LOG_FILE"

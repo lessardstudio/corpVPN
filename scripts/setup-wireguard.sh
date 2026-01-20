@@ -17,9 +17,12 @@ INTERFACE_NAME="wg0"
 if [ ! -f "/etc/wireguard/private.key" ]; then
     echo "Generating WireGuard keys..."
     mkdir -p /etc/wireguard
+    # Set umask to ensure private key is only readable by root
+    old_umask=$(umask)
+    umask 077
     wg genkey > /etc/wireguard/private.key
     wg pubkey < /etc/wireguard/private.key > /etc/wireguard/public.key
-    chmod 600 /etc/wireguard/private.key
+    umask $old_umask
 fi
 
 VPS_PRIVATE_KEY=$(cat /etc/wireguard/private.key)
