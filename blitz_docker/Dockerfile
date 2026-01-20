@@ -20,11 +20,16 @@ RUN apt-get update && apt-get install -y \
 RUN curl -Lo /usr/local/bin/hysteria https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-amd64 \
     && chmod +x /usr/local/bin/hysteria
 
-# Copy Blitz source code
+# Copy Blitz source code (if present in build context)
 COPY blitz_source/ /etc/hysteria/
 
-# Debug: List files to confirm copy success (Step 4)
-RUN ls -la /etc/hysteria/ && pwd
+ARG BLITZ_REPO=https://github.com/ReturnFI/Blitz.git
+ARG BLITZ_REF=master
+RUN if [ ! -f /etc/hysteria/requirements.txt ]; then \
+        rm -rf /etc/hysteria/* && \
+        git clone --depth 1 --branch "$BLITZ_REF" "$BLITZ_REPO" /etc/hysteria; \
+    fi && \
+    test -f /etc/hysteria/requirements.txt
 
 # Upgrade pip and install dependencies (Step 5 check + pip update)
 RUN pip install --upgrade pip && \
