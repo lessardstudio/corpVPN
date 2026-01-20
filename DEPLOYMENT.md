@@ -47,12 +47,21 @@ chmod +x scripts/deploy_vps.sh
 ./scripts/deploy_vps.sh
 ```
 
-This script will automatically:
-1. Update system and install dependencies (Docker, WireGuard, etc.)
-2. Configure security (UFW Firewall, Fail2ban, Auto-updates)
-3. Setup Host-based WireGuard
-4. Generate Hysteria2 configurations
-5. Start all services
+This script will interactively ask for:
+- New sudo username
+- Password for the new user
+- Custom SSH port (default: 2222)
+
+And then automatically:
+1. Update system and install dependencies
+2. Configure UFW Firewall and Fail2ban
+3. Create the new user and harden SSH (disable root login, change port)
+4. Setup Host-based WireGuard
+5. Generate Hysteria2 configurations
+6. Start all services
+
+> **IMPORTANT**: After deployment, your SSH port will be changed. Connect using:
+> `ssh -p <NEW_PORT> <NEW_USER>@your-vps-ip`
 
 #### Step 3: Post-Deployment
 After deployment, configure SSL and environment variables:

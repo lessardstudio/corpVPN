@@ -24,6 +24,9 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# SSH Port Configuration
+SSH_PORT=${SSH_PORT:-22}
+
 log_step "Installing Security Tools..."
 apt-get install -y ufw fail2ban unattended-upgrades
 
@@ -33,17 +36,19 @@ ufw --force reset
 ufw default deny incoming
 ufw default allow outgoing
 
-# Allow SSH
-ufw allow 22/tcp
+# Allow SSH (Custom Port)
+log_info "Allowing SSH on port $SSH_PORT"
+ufw allow $SSH_PORT/tcp
 
-# Allow Hysteria2
-ufw allow 443/udp
+# Allow HTTP/HTTPS (Web Server)
+ufw allow 80/tcp
 ufw allow 443/tcp
+ufw allow 443/udp
 
 # Allow Blitz Panel
 ufw allow 8000/tcp
 
-# Allow Automation Service (Optional - better to proxy via Nginx/Blitz if possible, but exposing for now)
+# Allow Automation Service
 ufw allow 8080/tcp
 
 # Allow WireGuard
@@ -57,7 +62,7 @@ log_step "Configuring Fail2ban..."
 cat > /etc/fail2ban/jail.local <<EOF
 [sshd]
 enabled = true
-port = ssh
+port = $SSH_PORT
 filter = sshd
 logpath = /var/log/auth.log
 maxretry = 3

@@ -27,7 +27,7 @@ fi
 log_step "Updating system packages..."
 apt-get update
 apt-get upgrade -y
-apt-get install -y curl wget git openssl apt-transport-https ca-certificates gnupg lsb-release
+apt-get install -y curl wget git openssl nano htop ufw apt-transport-https ca-certificates gnupg lsb-release
 
 log_step "Installing WireGuard tools..."
 apt-get install -y wireguard wireguard-tools iproute2

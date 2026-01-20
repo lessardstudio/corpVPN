@@ -29,6 +29,35 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+log_step "0. Configuration Setup"
+if [ -z "$VPS_USER" ]; then
+    read -p "Enter new username (default: admin): " VPS_USER
+    VPS_USER=${VPS_USER:-admin}
+fi
+
+if [ -z "$VPS_PASSWORD" ]; then
+    read -s -p "Enter password for $VPS_USER (leave empty to generate): " VPS_PASSWORD
+    echo ""
+    if [ -z "$VPS_PASSWORD" ]; then
+        VPS_PASSWORD=$(openssl rand -base64 12)
+        echo "Generated Password: $VPS_PASSWORD"
+    fi
+fi
+
+if [ -z "$SSH_PORT" ]; then
+    read -p "Enter new SSH port (default: 2222): " SSH_PORT
+    SSH_PORT=${SSH_PORT:-2222}
+fi
+
+export VPS_USER
+export VPS_PASSWORD
+export SSH_PORT
+
+log_info "Configuration:"
+log_info "- User: $VPS_USER"
+log_info "- SSH Port: $SSH_PORT"
+echo "--------------------------------------------------"
+
 # 1. System Preparation
 log_step "1. Starting System Preparation..."
 chmod +x scripts/prepare_vps.sh
@@ -39,8 +68,13 @@ log_step "2. Configuring Security..."
 chmod +x scripts/configure_security.sh
 ./scripts/configure_security.sh
 
-# 3. WireGuard Setup (Host Mode)
-log_step "3. Setting up WireGuard..."
+# 3. User & SSH Hardening
+log_step "3. Setting up User & SSH Hardening..."
+chmod +x scripts/setup_user_ssh.sh
+./scripts/setup_user_ssh.sh
+
+# 4. WireGuard Setup (Host Mode)
+log_step "4. Setting up WireGuard..."
 chmod +x scripts/setup-wireguard.sh
 # Check if WireGuard is already configured
 if [ ! -f "/etc/wireguard/wg0.conf" ]; then
@@ -49,16 +83,16 @@ else
     log_info "WireGuard already configured, skipping setup."
 fi
 
-# 4. Project Setup
-log_step "4. Setting up Hysteria2 Project..."
+# 5. Project Setup
+log_step "5. Setting up Hysteria2 Project..."
 chmod +x setup_hysteria2.sh
 ./setup_hysteria2.sh
 
-# 5. Start Services
-log_step "5. Starting Docker Services..."
+# 6. Start Services
+log_step "6. Starting Docker Services..."
 docker-compose up -d
 
-log_step "6. Verifying Deployment..."
+log_step "7. Verifying Deployment..."
 sleep 10
 docker-compose ps
 wg show
@@ -68,6 +102,10 @@ echo ""
 echo "Access Information:"
 echo "- Blitz Panel: https://YOUR_DOMAIN:8000"
 echo "- Hysteria2: YOUR_DOMAIN:443"
+echo ""
+echo "SSH Access:"
+echo "- Command: ssh -p $SSH_PORT $VPS_USER@<your-ip>"
+echo "- Password: $VPS_PASSWORD"
 echo ""
 echo "Next Steps:"
 echo "1. Edit .env file with your real secrets"

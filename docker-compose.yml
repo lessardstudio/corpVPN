@@ -1,15 +1,28 @@
 services:
+  mongo:
+    image: mongo:latest
+    container_name: blitz-mongo
+    restart: unless-stopped
+    volumes:
+      - ./blitz_data/db:/data/db
+    networks:
+      - vpn-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   blitz:
-    image: gozargah/blitz:latest
+    build:
+      context: .
+      dockerfile: blitz_docker/Dockerfile
     container_name: blitz
     restart: unless-stopped
     ports:
-      - "8000:8000" # Blitz UI
-      - "443:443/udp" # Hysteria2 UDP port
-      - "443:443/tcp" # Fallback TCP
-    volumes:
-      - ./blitz_data:/var/lib/blitz
-      - ./configs:/etc/blitz
+      - "8000:8000"
+      - "443:443/udp"
+      - "443:443/tcp"
     environment:
       BLITZ_ADMIN_USERNAME: admin
       BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD:-changeme123}
@@ -17,9 +30,19 @@ services:
       HYSTERIA2_ENABLED: "true"
       HYSTERIA2_PORT: 443
       HYSTERIA2_DOMAIN: ${DOMAIN:-your-domain.com}
-    # WireGuard runs on host, no depends_on needed
+      # Env vars for entrypoint
+      PORT: 8000
+      DOMAIN: ${DOMAIN:-your-domain.com}
+    depends_on:
+      mongo:
+        condition: service_healthy
     networks:
       - vpn-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   automation-service:
     build: ./automation-service
@@ -39,9 +62,15 @@ services:
       DOMAIN: ${DOMAIN:-your-domain.com}
       DB_PATH: /app/data/users.db
     depends_on:
-      - blitz
+      blitz:
+        condition: service_healthy
     networks:
       - vpn-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   vpn-network:
