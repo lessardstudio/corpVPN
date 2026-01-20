@@ -20,7 +20,7 @@ services:
       # Access Blitz running on host
       BLITZ_API_URL: http://localhost:8000/api
       BLITZ_ADMIN_USERNAME: admin
-      BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD:-qwerty123}
+      BLITZ_ADMIN_PASSWORD: ${BLITZ_ADMIN_PASSWORD}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       CORPORATE_SECRET: ${CORPORATE_SECRET}
       DOMAIN: ${DOMAIN:-h2.quick-vpn.ru}

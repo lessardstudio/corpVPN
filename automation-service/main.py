@@ -91,7 +91,7 @@ async def grant_access(
         
         return GrantAccessResponse(
             corporate_id=existing_user["corporate_id"],
-            username=existing_user["marzban_username"],
+            username=existing_user["blitz_username"],
             subscription_url=existing_user["subscription_url"],
             hy2_url=existing_user.get("hy2_url", ""),
             qr_code=qr_code
@@ -102,12 +102,17 @@ async def grant_access(
         # Check if user exists in Blitz
         user = await blitz.get_user(username)
         if not user:
-            user = await blitz.create_user(username)
+            created_user = await blitz.create_user(username)
+            hy2_auth_key = created_user.get("auth_key")
+        else:
+            hy2_auth_key = user.get("auth_key")
         
         # Get Hysteria2 configuration
-        config = await blitz.get_user_config(username)
         hy2_url = await blitz.get_hy2_url(username)
         subscription_url = await blitz.get_subscription_url(username)
+        if not hy2_auth_key:
+            refreshed = await blitz.get_user(username)
+            hy2_auth_key = (refreshed or {}).get("auth_key", "")
         
         # Generate QR code
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
@@ -120,7 +125,13 @@ async def grant_access(
         qr_code = base64.b64encode(buffer.getvalue()).decode()
         
         # Save to DB
-        await db.add_user(corporate_id, username, subscription_url, hy2_url=hy2_url)
+        await db.add_user(
+            corporate_id=corporate_id,
+            blitz_username=username,
+            subscription_url=subscription_url,
+            hy2_url=hy2_url,
+            hy2_auth_key=hy2_auth_key,
+        )
         
         return GrantAccessResponse(
             corporate_id=corporate_id,
@@ -148,7 +159,7 @@ async def get_user_config(
     
     # Get traffic stats from Blitz
     try:
-        stats = await blitz.get_user_stats(user["marzban_username"])
+        stats = await blitz.get_user_stats(user["blitz_username"])
     except Exception as e:
         logger.error(f"Error getting user stats: {e}")
         stats = {"upload": 0, "download": 0}
@@ -165,7 +176,7 @@ async def get_user_config(
     
     return UserConfigResponse(
         corporate_id=user["corporate_id"],
-        username=user["marzban_username"],
+            username=user["blitz_username"],
         hy2_url=user.get("hy2_url", ""),
         subscription_url=user["subscription_url"],
         qr_code=qr_code,
@@ -186,7 +197,7 @@ async def deactivate_user(
     
     try:
         # Deactivate in Blitz
-        await blitz.update_user_status(user["marzban_username"], False)
+        await blitz.update_user_status(user["blitz_username"], False)
         
         # Deactivate in database
         await db.deactivate_user(corporate_id)

@@ -9,15 +9,14 @@ from datetime import datetime
 
 from config import get_settings
 from database import Database
-from marzban import MarzbanClient
+from blitz_client import BlitzClient
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 settings = get_settings()
 db = Database(settings.DB_PATH)
-# Use Blitz configuration instead of Marzban
-marzban = MarzbanClient(settings.BLITZ_API_URL, settings.BLITZ_SECRET_KEY)
+blitz = BlitzClient(settings.BLITZ_API_URL, settings.BLITZ_ADMIN_USERNAME, settings.BLITZ_ADMIN_PASSWORD)
 
 class WebhookEvent(BaseModel):
     event_type: str
@@ -107,12 +106,10 @@ async def handle_user_deactivated(corporate_id: str, event_data: Dict[str, Any])
         logger.warning(f"User {corporate_id} not found in database")
         return
     
-    # Deactivate user in Marzban
     try:
-        username = user['marzban_username']
-        # This would call Marzban API to disable the user
-        # For now, we'll just log the action
-        logger.info(f"Deactivating Marzban user {username} for corporate_id {corporate_id}")
+        username = user['blitz_username']
+        await blitz.update_user_status(username, False)
+        logger.info(f"Deactivated Blitz user {username} for corporate_id {corporate_id}")
         
         # Update database
         await db.deactivate_user(corporate_id)

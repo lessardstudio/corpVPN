@@ -53,10 +53,8 @@ Thumbs.db
 # Project Specific
 blitz_data/
 automation_data/
-configs/
-!configs/blitz.env
-!configs/*.json
-!configs/*.template.*
+configs/*.local
+configs/*.local.*
 
 # Scripts generated artifacts
 deploy_vps.log

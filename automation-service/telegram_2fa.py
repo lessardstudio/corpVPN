@@ -178,7 +178,7 @@ class Telegram2FA:
         await message.answer(
             "📱 Ваша VPN конфигурация:\n\n"
             f"Корпоративный ID: {user['corporate_id']}\n"
-            f"Username: {user['marzban_username']}\n\n"
+                f"Username: {user['blitz_username']}\n\n"
             "🔗 Ссылка на конфигурацию:\n"
             f"{subscription_url}\n\n"
             "Инструкции по установке:\n"
