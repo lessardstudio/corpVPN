@@ -53,6 +53,7 @@ services:
     volumes:
       - ./automation_data:/app/data
       - ./configs:/app/configs
+      - ./automation_logs:/app/logs
     environment:
       BLITZ_API_URL: http://blitz:8000/api
       BLITZ_ADMIN_USERNAME: admin

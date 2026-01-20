@@ -14,8 +14,10 @@ from blitz_client import BlitzClient
 from telegram_2fa import Telegram2FA
 from monitor import HealthMonitor
 
+from logger import setup_logging
+
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+setup_logging()
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
