@@ -60,3 +60,9 @@ configs/
 
 # Scripts generated artifacts
 deploy_vps.log
+
+# Force track source directories (ensure they are not ignored)
+!blitz_source/
+!blitz_source/**
+!automation-service/
+!automation-service/**
