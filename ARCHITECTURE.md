@@ -1,44 +1,38 @@
-# Архитектура проекта: Corporate VPN Automation Gateway
+# Архитектура проекта: Corporate VPN Gateway (Blitz + Hysteria2)
 
-## 1. Контекст и Цель
-Создание защищенного корпоративного шлюза для сотрудников в РФ. Система должна обходить блокировки DPI (через VLESS Reality) и предоставлять доступ **только** к внутренним ресурсам компании, сохраняя обычный интернет-трафик пользователя нетронутым (Split Tunneling).
+## 1. Контекст и цель
+Система предоставляет управляемый корпоративный VPN-доступ с централизованным управлением пользователями, выдачей конфигураций и интеграцией с HR-событиями (вебхуки).
 
 ## 2. Технологический стек
-- **Core:** Xray Core (VLESS + Reality)
-- **Orchestration:** Marzban (Docker-based)
-- **Tunneling:** WireGuard (VPS <-> Office Network)
-- **Client:** Hiddify (TUN Mode)
-- **Automation:** Python 3.11 (FastAPI / Aiogram 3.x)
-- **Database:** SQLite (для локального кэша пользователей)
+- **VPN Core:** Hysteria2 (UDP + TCP fallback)
+- **Панель управления:** Blitz Panel (web UI + API)
+- **Automation:** Python 3.11 (FastAPI + Aiogram 3.x)
+- **БД:** MongoDB (Blitz), SQLite (Automation Service: кэш пользователей, реестр ID, аудит)
+- **Оркестрация:** Docker Compose
 
-## 3. Схема потоков данных (Data Flow)
+## 3. Компоненты
+### A. Blitz (контейнер `blitz`)
+- Web UI администратора и API управления пользователями Hysteria2.
+- Генерирует/использует конфигурацию Hysteria2 (`/etc/hysteria/config.json`) и запускает Hysteria2 процесс через supervisord.
 
+### B. MongoDB (контейнер `blitz-mongo`)
+- Хранилище данных Blitz Panel.
 
+### C. Automation Service (контейнер `automation-service`)
+- API для выдачи доступа: `/access/grant`, `/user/{id}/config`, `/user/{id}/deactivate`.
+- Telegram-бот для 2FA и администрирования корпоративных ID.
+- Хранит SQLite БД: `automation_data/users.db` (пользователи, логи, webhooks, traffic stats, id_registry/id_audit).
 
-1. **Provisioning:** User -> Telegram Bot -> Marzban API -> Create User.
-2. **Subscription:** Hiddify Client -> Marzban Sub Endpoint -> Config JSON (VLESS).
-3. **Traffic:** Client Device -> VLESS Reality (Port 443) -> VPS -> WireGuard Tunnel -> Office Server.
+## 4. Потоки данных (Data Flow)
+1. **Выдача доступа:** HR/сервис → `POST /access/grant` → Automation → Blitz API → создание пользователя → запись в SQLite → возврат `hy2_url` и `subscription_url`.
+2. **Получение конфигурации:** Пользователь → Telegram Bot → `/get_config` → ссылка/QR.
+3. **Деактивация:** HR webhook → `/webhooks/hr-events` → Automation → Blitz API disable user → отметка `is_active=0`.
 
-## 4. Компоненты системы
+## 5. Безопасность
+- Все защищенные эндпоинты требуют `X-Corporate-Secret`.
+- Вебхуки могут подписываться HMAC (`WEBHOOK_SECRET`).
+- `.env` содержит секреты и не должен коммититься; используйте `.env.example` как шаблон.
 
-### А. Инфраструктура (Marzban)
-- Конфигурация `xray_config.json` должна быть в режиме "Whitelist".
-- Запрет всего трафика (`blackhole`), кроме подсетей: `192.168.0.0/16`, `10.0.0.0/8`.
-
-### Б. Модуль автоматизации (API Wrapper)
-- **Endpoint `POST /access/grant`:** Проверяет корпоративный ID, создает пользователя в Marzban, возвращает `subscription_url`.
-- **Logic:** Интеграция с Telegram для двухфакторной аутентификации (опционально).
-
-### В. Сетевой уровень (Routing)
-- Использование TUN-интерфейса на стороне клиента.
-- Правила маршрутизации передаются через JSON-профиль Sing-box внутри подписки Marzban.
-
-## 5. Ограничения и Безопасность
-- **No Global Proxy:** Весь публичный трафик идет мимо VPN (Direct).
-- **Reality Stealth:** SNI должен имитировать `dl.google.com` или аналогичный разрешенный ресурс.
-- **Short-lived Links:** Ссылки подписки должны аннулироваться при деактивации сотрудника в основной системе (через вебхук).
-
-## 6. Инструкции для Gemini CLI
-- При написании кода для бота использовать библиотеку `requests` или `httpx`.
-- Всегда следовать принципу асинхронности в Python.
-- При генерации конфигов Xray использовать UUID v4.
+## 6. Масштабирование
+- При росте нагрузки рекомендуется разделить API и Telegram polling на два процесса/контейнера.
+- Для продакшна — включить несколько workers для FastAPI (gunicorn/uvicorn workers) и лимиты ресурсов в compose.

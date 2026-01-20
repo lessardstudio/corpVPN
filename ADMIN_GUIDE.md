@@ -139,9 +139,8 @@ rm -rf "$BACKUP_DIR"
 **Причина**: Отсутствуют файлы исходного кода на сервере.
 **Решение**:
 ```bash
-# Выполнить на локальной машине
-scp -r .\blitz_source root@IP:~/corpVPN/
-scp -r .\automation-service root@IP:~/corpVPN/
+rm -rf blitz_source
+git clone --depth 1 https://github.com/ReturnFI/Blitz.git blitz_source
 ```
 Либо используйте скрипт восстановления: `./scripts/fix_blitz.sh`.
 

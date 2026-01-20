@@ -202,11 +202,13 @@ install_docker() {
 setup_project() {
     log_step "Setting up Project..."
 
-    # Check for source code presence
-    if [ ! -d "blitz_source" ] || [ -z "$(ls -A blitz_source)" ]; then
-        log_error "Directory 'blitz_source' is missing or empty!"
-        log_error "Please upload the source code to this directory before deploying."
-        log_error "Example: scp -r blitz_source/ root@your-server-ip:$(pwd)/"
+    if [ ! -d "blitz_source" ] || [ -z "$(ls -A blitz_source 2>/dev/null)" ]; then
+        log_warn "Directory 'blitz_source' is missing or empty. Downloading from GitHub..."
+        rm -rf blitz_source
+        git clone --depth 1 https://github.com/ReturnFI/Blitz.git blitz_source
+    fi
+    if [ ! -f "blitz_source/requirements.txt" ]; then
+        log_error "blitz_source downloaded but requirements.txt is missing. Aborting."
         exit 1
     fi
     

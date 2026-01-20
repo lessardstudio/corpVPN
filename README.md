@@ -86,6 +86,18 @@ Runs Blitz Panel directly on the host (systemd) for maximum performance, while k
  -   [Admin Guide](ADMIN_GUIDE.md)
  -   [ID Policy](ID_POLICY.md)
 
+## ✅ Smoke Checks
+```bash
+docker-compose ps
+curl -f http://localhost:8080/health
+```
+
+Unit tests:
+```bash
+cd automation-service
+python -m unittest discover -s tests -p "test_*.py"
+```
+
 ## ⚙️ .env Variables
 Required:
 - `DOMAIN` — public domain for URLs

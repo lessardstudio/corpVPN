@@ -37,6 +37,10 @@ Copy the entire project directory to your VPS:
 ```bash
 scp -r corp/ root@your-vps-ip:/opt/corp
 ```
+If you cannot use scp, clone from GitHub directly on the VPS:
+```bash
+git clone https://github.com/your-org/corp-vpn.git /opt/corp
+```
 
 #### Step 2: Run Deployment Script
 Connect to your VPS and run the master deployment script:

@@ -1,5 +1,7 @@
 # Project Context: Gemini CLI Tooling
 
+Этот документ относится к инструментам разработки и не является частью runtime-развертывания VPN-стека.
+
 ## Tech Stack
 - Language: Python 3.10+
 - Key Libraries: `google-genai`, `click` or `typer` (for CLI), `rich` (for UI)

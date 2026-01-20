@@ -1,4 +1,6 @@
-# Installation Guide
+# Installation Guide (Tooling: Gemini CLI)
+
+Этот документ относится к инструментам Gemini CLI и не требуется для развертывания Corporate VPN Gateway.
 
 ## Prerequisites
 - Node.js v22+ (for official Gemini CLI)
