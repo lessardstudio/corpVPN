@@ -21,10 +21,12 @@ class HealthMonitor:
         asyncio.create_task(self._monitor_automation())
 
     async def _monitor_blitz(self):
+        base = settings.BLITZ_API_URL.rstrip("/")
+        base = base[:-4] if base.endswith("/api") else base
         async with httpx.AsyncClient(timeout=5.0) as client:
             while not self._stop:
                 try:
-                    resp = await client.get("http://blitz:8000/")
+                    resp = await client.get(f"{base}/")
                     if resp.status_code == 200:
                         if self._blitz_fail_count:
                             self._blitz_fail_count = 0
@@ -55,4 +57,3 @@ class HealthMonitor:
             except Exception as e:
                 logger.error(f"monitor automation log error: {e}")
             await asyncio.sleep(300)
-

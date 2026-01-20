@@ -13,6 +13,9 @@ class BlitzClient:
         self.username = username
         self.password = password
         self.token = None
+
+    def _public_base_url(self) -> str:
+        return self.base_url[:-4] if self.base_url.endswith("/api") else self.base_url
         
     async def _get_token(self) -> str:
         """Get authentication token from Blitz panel"""
@@ -154,7 +157,7 @@ class BlitzClient:
 
     async def get_subscription_url(self, username: str) -> str:
         """Get subscription URL for user"""
-        return f"{self.base_url}/sub/{username}"
+        return f"{self._public_base_url()}/sub/{username}"
 
     async def get_hy2_url(self, username: str) -> str:
         """Get Hysteria2 URL for direct connection"""
