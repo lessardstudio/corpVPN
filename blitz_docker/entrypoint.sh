@@ -30,6 +30,51 @@ DECOY_PATH=$DECOY_PATH
 EOL
 
 echo "Starting Supervisord (Web Panel + Hysteria2)..."
+# Ensure TLS material exists for Hysteria2 server config (self-signed fallback)
+mkdir -p /etc/blitz/ssl
+if [ ! -f "/etc/blitz/ssl/server.crt" ] || [ ! -f "/etc/blitz/ssl/server.key" ]; then
+  openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
+    -keyout /etc/blitz/ssl/server.key \
+    -out /etc/blitz/ssl/server.crt \
+    -subj "/CN=${DOMAIN}"
+fi
+
+# Patch default Blitz config.json placeholders to real cert/key paths
+if [ -f "/etc/hysteria/config.json" ]; then
+  sed -i "s|\"cert\": \"/path/to/ca.crt\"|\"cert\": \"/etc/blitz/ssl/server.crt\"|g" /etc/hysteria/config.json
+  sed -i "s|\"key\": \"/path/to/ca.key\"|\"key\": \"/etc/blitz/ssl/server.key\"|g" /etc/hysteria/config.json
+  python3 - <<'PY'
+import json
+
+p = "/etc/hysteria/config.json"
+with open(p, "r", encoding="utf-8") as f:
+    d = json.load(f)
+
+changed = False
+for ob in d.get("outbounds") or []:
+    if not isinstance(ob, dict):
+        continue
+    direct = ob.get("direct")
+    if isinstance(direct, dict) and isinstance(direct.get("bindDevice"), str) and direct["bindDevice"].startswith("$"):
+        direct.pop("bindDevice", None)
+        changed = True
+
+with open(p, "w", encoding="utf-8") as f:
+    json.dump(d, f, ensure_ascii=False, indent=2)
+
+print("Patched config.json bindDevice placeholders" if changed else "config.json bindDevice ok")
+PY
+fi
+
+# Ensure GeoIP/GeoSite databases exist (required by default ACL rules)
+if [ -f "/etc/hysteria/config.json" ] && grep -q "geosite:ir" /etc/hysteria/config.json; then
+  curl -fsSL -o /etc/hysteria/geosite.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
+  curl -fsSL -o /etc/hysteria/geoip.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
+fi
+
+# Ensure supervisor control socket path exists for restart scripts
+mkdir -p /var/run
+rm -f /var/run/supervisor.sock
 # Patch Hysteria listen port in config if placeholder is present
 if [ -n "${HYSTERIA2_PORT}" ] && [ -f "/etc/hysteria/config.json" ]; then
   sed -i "s/:\$port/:${HYSTERIA2_PORT}/g" /etc/hysteria/config.json
